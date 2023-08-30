@@ -11,6 +11,16 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class Configuration:
+    """Singleton class for managing configuration settings.
+
+    This class implements the Singleton pattern to ensure that only one instance of
+    Configuration exists throughout the application. It manages configuration settings,
+    both stored in a configuration file like the verbose mode, and a generated salt
+    using predefined arguments.
+
+    Creates a new instance of the Configuration class if it doesn't exist.
+    """
+
     __instance = None
 
     def __new__(cls, **kwargs):
@@ -18,7 +28,7 @@ class Configuration:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs):
         self.config_file = "config"
         self.verbose = kwargs.get("verbose", False)
 
@@ -26,6 +36,8 @@ class Configuration:
         self.__load_config()
 
     def __load_config(self):
+        """Loads configuration file or create a new one if it does not exist."""
+
         print("Loading config file") if self.verbose else None
         config = ConfigParser()
 
@@ -51,11 +63,26 @@ class Configuration:
             config["GENERAL"]["verbose"] = "False"
             self.__save_config(config)
 
-    def __save_config(self, config):
+    def __save_config(self, config: ConfigParser):
+        """Save configuration settings to the file.
+
+        Params:
+            config (ConfigParser): Configuration instance.
+        """
+
         with open(self.config_file, "w") as config_file:
             config.write(config_file)
 
-    def generate_salt(self):
+    def generate_salt(self) -> str:
+        """Generates a unique salt based on environment variables.
+
+        The salt creation is meant to be unique for each use, but still reproducible
+        in order to recalculate the derived key.
+
+        Returns:
+            salt (str): Generated salt.
+        """
+
         print("Generating salt with predefined arguments") if self.verbose else None
         pepper = getenv("PEPPER", "default_pepper")
         machine_name = getenv("HOSTNAME", "default_host")
@@ -65,7 +92,16 @@ class Configuration:
         salt = sha256(salt_data).hexdigest()
         return salt
 
-    def generate_key(self, password):
+    def generate_key(self, password: str) -> str:
+        """Generate a derived key from the provided password.
+
+        Params:
+            password (str): User's password.
+
+        Returns:
+            key (str): Generated key.
+        """
+
         print("Generating a secured derived key") if self.verbose else None
         password_bytes = password.encode("utf-8")
         salt_bytes = self.__salt.encode("utf-8")
@@ -79,7 +115,7 @@ class Configuration:
         )
         key = urlsafe_b64encode(kdf.derive(password_bytes))
 
-        return key
+        return key.decode("utf-8")
 
 
 def main():
@@ -87,7 +123,7 @@ def main():
 
     usr_pwd = getpass("Ingrese su contraseña: ")
     secure_key = config.generate_key(usr_pwd)
-    print("Clave generada:", secure_key.decode("utf-8"))
+    print("Clave generada:", secure_key)
 
 
 if __name__ == "__main__":
