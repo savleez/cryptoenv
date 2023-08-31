@@ -85,10 +85,9 @@ class Configuration:
 
         print("Generating salt with predefined arguments") if self.verbose else None
         pepper = getenv("PEPPER", "default_pepper")
-        machine_name = getenv("HOSTNAME", "default_host")
         user_name = getenv("USER", "default_host")
 
-        salt_data = f"{pepper}-{user_name}-{machine_name}".encode("utf-8")
+        salt_data = f"{pepper}-{user_name}".encode("utf-8")
         salt = sha256(salt_data).hexdigest()
         return salt
 
