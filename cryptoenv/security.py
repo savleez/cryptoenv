@@ -8,7 +8,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from .configuration import Config
+from .configuration import Configuration
 
 
 class KeyManager:
@@ -72,20 +72,19 @@ class Encryptor:
         self.__generated_key = KeyManager().generate_key(password)
         self.__fernet_key = Fernet(self.__generated_key)
 
-        self.encrypted_files_dir = Config.encrypted_files_dir
+        self.encrypted_files_dir = kwargs.get(
+            "encrypted_files_dir", Configuration().encrypted_files_dir
+        )
 
-    def get_encrypted_file(self, **kwargs) -> str:
-        file: str = kwargs.get("file", Config.default_encryped_file)
-        file += ".encrypted" if not Path(file).suffix else ""
-        filepath = self.encrypted_files_dir / file
+    def get_encrypted_file(self, **kwargs) -> tuple[str, bool]:
+        file: str = kwargs.get("file", Configuration().default_encryped_file)
+        file = Path(file).with_suffix(".encrypted")
+        filepath = Path(self.encrypted_files_dir) / file
 
-        if not Path(filepath).exists():
-            raise ValueError(f"File does not exist: {filepath}")
-
-        return filepath
+        return (str(filepath), filepath.exists())
 
     def create_encrypted_file(self, content: str, **kwargs):
-        file: str = self.get_encrypted_file(**kwargs)
+        file, _ = self.get_encrypted_file(**kwargs)
 
         encrypted_content = self.__fernet_key.encrypt(content.encode("utf-8"))
 
@@ -93,7 +92,10 @@ class Encryptor:
             file.write(encrypted_content)
 
     def read_encrypted_file(self, **kwargs):
-        file: str = self.get_encrypted_file(**kwargs)
+        file, exist = self.get_encrypted_file(**kwargs)
+
+        if not exist:
+            raise ValueError("Encrypted file does not exist.")
 
         with open(file, "r") as file:
             encrypted_content = file.read()
@@ -102,4 +104,4 @@ class Encryptor:
             encrypted_content.encode("utf-8")
         ).decode("utf-8")
 
-        print(decrypted_content)
+        return decrypted_content

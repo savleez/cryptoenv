@@ -2,7 +2,7 @@ from configparser import ConfigParser
 from pathlib import Path
 
 
-class ConfigurationManager:
+class Configuration:
     """Singleton class for managing configuration settings.
 
     This class implements the Singleton pattern to ensure that only one instance of
@@ -15,22 +15,22 @@ class ConfigurationManager:
 
     __instance = None
 
-    def __new__(cls):
+    def __new__(cls, **kwargs):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.__base_dir: Path = Path(__file__).resolve().parent
         self.__app_dir: Path = self.__base_dir.parent
 
-        self.__config_file_dir: Path = self.__app_dir
+        self.__config_file_dir: Path = kwargs.get("config_file_dir", self.__app_dir)
         self.__config_file: Path = self.__config_file_dir / "config"
 
-        self.__config: ConfigParser
-
         self.verbose: bool = False
-        self.encrypted_files_dir: Path = self.__app_dir
+        self.encrypted_files_dir: Path = kwargs.get(
+            "encrypted_files_dir", self.__app_dir
+        )
         self.default_encryped_file: str = "encrypted_file.encrypted"
 
         self.__load_config()
@@ -57,8 +57,6 @@ class ConfigurationManager:
         self.verbose = config["GENERAL"]["verbose"].lower() == "true"
         self.encrypted_files_dir = Path(config["GENERAL"]["encrypted files dir"])
 
-        self.__config = config
-
     def __save_config(self, config: ConfigParser):
         """Save configuration settings to the file.
 
@@ -69,8 +67,17 @@ class ConfigurationManager:
         with open(self.__config_file, "w") as config_file:
             config.write(config_file)
 
-    def create_default_config_file(self):
-        self.__save_config(self.__config)
+    def create_default_config_file(config_file_path: str, encrypted_files_dir: str):
+        config_file_path = Path(config_file_path)
+        encrypted_files_dir = Path(encrypted_files_dir)
 
+        config_file_path.parent.mkdir(exist_ok=True, parents=True)
+        encrypted_files_dir.mkdir(exist_ok=True, parents=True)
 
-Config = ConfigurationManager()
+        config = ConfigParser()
+        config["GENERAL"] = {}
+        config["GENERAL"]["verbose"] = "False"
+        config["GENERAL"]["encrypted files dir"] = str(encrypted_files_dir.resolve())
+
+        with open(config_file_path, "w") as config_file:
+            config.write(config_file)
