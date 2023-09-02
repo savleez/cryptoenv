@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cryptoenv</title>
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}" />
+    <!-- Javascript -->
+    <script src="{{ url_for('static', path='script.js') }}"></script>
+  </head>
+
+  <body>
+    <h1>Cryptoenv</h1>
+    <div class="input-container">
+      <label for="file-content">
+        {% if filename %} {{ filename }} {% else %}No file selected{% endif %}
+      </label>
+      <input type="text" id="file-content" name="file-content" readonly>
+    </div>
+
+    <div class="form-container">
+      <form action="#" method="post" enctype="multipart/form-data">
+        {# <input type="text" id="new-file-name" name="new-file-name" placeholder="New file name" required> #}
+        <button type="button" class="new-file-button" onclick="createNewFile()">New file</button>        
+        {# <label class="new-file-label" for="new-file">New file</label>
+        <input
+          type="file"
+          id="new-file"
+          name="new-file"
+          class="file-input"
+          required
+          directory
+          webkitdirectory
+        /> #}
+      </form>
+
+      <form action="/decrypt/" method="post" enctype="multipart/form-data"></form>
+        <button type="button" class="file-input-label" onclick="decryptAndDisplayContent()">Open file</button>
+        {# <label class="file-input-label" for="file">Open file</label> #}
+        <input
+          type="file"
+          id="file"
+          name="file"
+          accept=".encrypted"
+          class="file-input"
+        />
+        {# <label for="password">Password</label> #}
+        {# <input type="password" id="password" name="password" required /><br /> #}
+        {# <input type="submit" value="Decrypt" /> #}
+      </form>
+    </div>
+  </body>
+</html>

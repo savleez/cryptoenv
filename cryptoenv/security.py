@@ -83,6 +83,18 @@ class Encryptor:
 
         return (str(filepath), filepath.exists())
 
+    def encryp_content(self, content: str):
+        encrypted_content = self.__fernet_key.encrypt(content.encode()).decode()
+
+        return encrypted_content
+
+    def decrypt_content(self, encrypted_content: str):
+        decrypted_content = self.__fernet_key.decrypt(
+            encrypted_content.encode()
+        ).decode()
+
+        return decrypted_content
+
     def create_encrypted_file(self, content: str, **kwargs):
         file, _ = self.get_encrypted_file(**kwargs)
 
