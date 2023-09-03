@@ -1,12 +1,22 @@
 async function createNewFile() {
-  let fileName = prompt("New file name: ").trim();
+  let fileName = prompt("New file name: ");
+
+  if (!fileName) {
+    return;
+  }
+
+  fileName = fileName ? fileName.trim() : fileName;
 
   if (fileName === "") {
     alert("Please enter a file name.");
     return;
   }
 
-  let password = prompt("File password: ").trim();
+  let password = prompt("File password: ");
+
+  if (!password) {
+    return;
+  }
 
   if (password === "") {
     alert("Please enter a password.");
@@ -30,18 +40,18 @@ async function createNewFile() {
     let data = await response.json();
 
     if (response.ok) {
-      let { filename, content } = data;
-      let blob = new Blob([content], { type: "text/plain" });
+      let { filename, encrypted_content } = data;
+      let blob = new Blob([encrypted_content], { type: "text/plain" });
       let url = window.URL.createObjectURL(blob);
       let a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
-      a.download = `${filename}.encrypted`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
 
-      encryptedFileObj.encrypted_content = content;
+      encryptedFileObj.encrypted_content = encrypted_content;
     } else {
       let errorDetail = data.detail;
       throw Error(errorDetail);
@@ -59,35 +69,44 @@ async function createNewFile() {
   }
 }
 
-async function decryptAndDisplayContent(encryptedFileObj = null) {
-  if (!encryptedFileObj) {
-    let password = prompt("File password: ").trim();
+async function openFile() {
+  fileInput.click();
 
-    if (password === "") {
-      alert("Please enter a password.");
+  fileInput.addEventListener("change", async (event) => {
+    let selectedFile = event.target.files[0];
+
+    if (!selectedFile) {
       return;
     }
 
-    // TODO: Fix the open file feature
-    const fileInput = document.getElementById("file");
+    try {
+      let fileContent = await readFileContent(selectedFile);
 
-    fileInput.addEventListener("change", (event) => {
-      const selectedFile = event.target.files[0]; // Puedes acceder a más archivos si es necesario
+      let password = prompt("File password: ");
 
-      if (selectedFile) {
-        const fileName = selectedFile.name;
-        console.log(`Archivo seleccionado: ${fileName}`);
+      if (!password) {
+        return;
       }
-    });
 
-    let encryptedFileObj = {
-      filename: selectedFile,
-      password: password,
-    };
+      if (password === "") {
+        alert("Please enter a password.");
+        return;
+      }
 
-    console.log(encryptedFileObj);
-  }
+      let encryptedFileObj = {
+        filename: selectedFile.name,
+        password: password,
+        encrypted_content: fileContent,
+      };
 
+      decryptAndDisplayContent(encryptedFileObj);
+    } catch (error) {
+      alert("Error reading file: " + error);
+    }
+  });
+}
+
+async function decryptAndDisplayContent(encryptedFileObj) {
   try {
     let response = await fetch("/decrypt", {
       method: "POST",
@@ -109,4 +128,21 @@ async function decryptAndDisplayContent(encryptedFileObj = null) {
     console.error(error);
     alert("An error occurred.");
   }
+}
+
+async function readFileContent(file) {
+  return new Promise((resolve, reject) => {
+    let fileReader = new FileReader();
+
+    fileReader.addEventListener("load", (event) => {
+      let fileContent = event.target.result;
+      resolve(fileContent);
+    });
+
+    fileReader.addEventListener("error", (event) => {
+      reject("Error reading file: " + event.target.error);
+    });
+
+    fileReader.readAsText(file);
+  });
 }

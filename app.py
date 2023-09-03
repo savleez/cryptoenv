@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 
-from cryptoenv import Encryptor
+from cryptoenv import Encryptor, DecryptedConfigHandler
 
 
 app = FastAPI()
@@ -48,6 +48,16 @@ class EncryptedFile(BaseModel):
         return decrypted_content
 
 
+config_string = """
+[General]
+server_url = https://example.com
+timeout = 30
+
+[Credentials]
+username = my_username
+password = my_password
+"""
+
 app.mount("/static", StaticFiles(directory="cryptoenv/web_gui/static"), name="static")
 templates = Jinja2Templates(directory="cryptoenv/web_gui/templates")
 
@@ -62,17 +72,18 @@ async def read_root(request: Request):
 
 @app.post("/new_file")
 async def generate_file(encrypted_file: EncryptedFile):
+    global config_string
+
     try:
         encrypted_file.validate_filename()
         encrypted_file.validate_password()
 
-        ## TODO: Define initial content
-        encrypted_file.content = "Initial content"
+        encrypted_file.content = config_string
         encrypted_file.encrypt_content()
 
         return {
             "filename": encrypted_file.validated_filename,
-            "content": encrypted_file.encrypted_content,
+            "encrypted_content": encrypted_file.encrypted_content,
         }
 
     except HTTPException as e:
@@ -87,8 +98,12 @@ async def decrypt_file(encrypted_file: EncryptedFile):
     try:
         decrypted_content = encrypted_file.decrypt_content()
 
+        config_handler = DecryptedConfigHandler(decrypted_content)
+
+        serialized_config = config_handler.serialize_config()
+
         return {
-            "decrypted_content": decrypted_content,
+            "decrypted_content": serialized_config,
         }
     except Exception as e:
         return {"error": str(e)}

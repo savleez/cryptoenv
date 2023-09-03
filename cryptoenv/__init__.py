@@ -1,2 +1,2 @@
-from .configuration import Configuration
+from .configuration import Configuration, DecryptedConfigHandler
 from .security import KeyManager, Encryptor
