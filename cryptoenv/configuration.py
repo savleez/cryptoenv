@@ -1,5 +1,6 @@
 from configparser import ConfigParser
 from pathlib import Path
+from json import dumps as json_dumps
 
 
 class Configuration:
@@ -81,3 +82,25 @@ class Configuration:
 
         with open(config_file_path, "w") as config_file:
             config.write(config_file)
+
+
+class DecryptedConfigHandler:
+    def __init__(self, config_string):
+        self.config_string = config_string
+
+        self.config_content = config = ConfigParser()
+        self.config_content.read_string(self.config_string)
+
+    def config_to_dict(self) -> dict:
+        config_dict = {
+            section: dict(self.config_content[section])
+            for section in self.config_content.sections()
+        }
+
+        return config_dict
+
+    def serialize_config(self) -> str:
+        config_dict = self.config_to_dict()
+        config_str = json_dumps(config_dict)
+
+        return config_str
