@@ -1,6 +1,5 @@
 from configparser import ConfigParser
 from pathlib import Path
-from json import dumps as json_dumps
 
 
 class Configuration:
@@ -16,23 +15,24 @@ class Configuration:
 
     __instance = None
 
-    def __new__(cls, **kwargs):
+    def __new__(cls):
         if cls.__instance is None:
             cls.__instance = super().__new__(cls)
         return cls.__instance
 
-    def __init__(self, **kwargs):
-        self.__base_dir: Path = Path(__file__).resolve().parent
+    def __init__(self):
+        self.__base_dir: Path = Path(__file__).resolve().parent.parent
         self.__app_dir: Path = self.__base_dir.parent
 
-        self.__config_file_dir: Path = kwargs.get("config_file_dir", self.__app_dir)
+        self.__config_file_dir: Path = self.__app_dir
         self.__config_file: Path = self.__config_file_dir / "config"
 
-        self.verbose: bool = False
-        self.encrypted_files_dir: Path = kwargs.get(
-            "encrypted_files_dir", self.__app_dir
+        self.encrypted_files_dir: Path = self.__app_dir
+
+        self.default_encryped_file_name = "config.encrypted"
+        self.default_encryped_file = (
+            self.encrypted_files_dir / self.default_encryped_file_name
         )
-        self.default_encryped_file: str = "encrypted_file.encrypted"
 
         self.__load_config()
 
@@ -68,39 +68,12 @@ class Configuration:
         with open(self.__config_file, "w") as config_file:
             config.write(config_file)
 
-    def create_default_config_file(config_file_path: str, encrypted_files_dir: str):
-        config_file_path = Path(config_file_path)
-        encrypted_files_dir = Path(encrypted_files_dir)
-
-        config_file_path.parent.mkdir(exist_ok=True, parents=True)
-        encrypted_files_dir.mkdir(exist_ok=True, parents=True)
-
+    def create_default_config_file(self):
         config = ConfigParser()
         config["GENERAL"] = {}
         config["GENERAL"]["verbose"] = "False"
-        config["GENERAL"]["encrypted files dir"] = str(encrypted_files_dir.resolve())
+        config["GENERAL"]["encrypted files dir"] = str(
+            self.encrypted_files_dir.resolve()
+        )
 
-        with open(config_file_path, "w") as config_file:
-            config.write(config_file)
-
-
-class DecryptedConfigHandler:
-    def __init__(self, config_string):
-        self.config_string = config_string
-
-        self.config_content = config = ConfigParser()
-        self.config_content.read_string(self.config_string)
-
-    def config_to_dict(self) -> dict:
-        config_dict = {
-            section: dict(self.config_content[section])
-            for section in self.config_content.sections()
-        }
-
-        return config_dict
-
-    def serialize_config(self) -> str:
-        config_dict = self.config_to_dict()
-        config_str = json_dumps(config_dict)
-
-        return config_str
+        self.__save_config(config)

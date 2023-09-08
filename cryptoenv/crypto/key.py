@@ -1,17 +1,13 @@
 from base64 import urlsafe_b64encode
 from hashlib import sha256
 from os import getenv
-from pathlib import Path
 
-from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from .configuration import Configuration
 
-
-class KeyManager:
+class KeyGenerator:
     """Class for keys management.
 
     This class provides methods to generate unique salts and derive keys from passwords.
@@ -65,55 +61,3 @@ class KeyManager:
         key = urlsafe_b64encode(kdf.derive(password_bytes))
 
         return key.decode("utf-8")
-
-
-class Encryptor:
-    def __init__(self, password: str, **kwargs) -> None:
-        self.__generated_key = KeyManager().generate_key(password)
-        self.__fernet_key = Fernet(self.__generated_key)
-
-        self.encrypted_files_dir = kwargs.get(
-            "encrypted_files_dir", Configuration().encrypted_files_dir
-        )
-
-    def get_encrypted_file(self, **kwargs) -> tuple[str, bool]:
-        file: str = kwargs.get("file", Configuration().default_encryped_file)
-        file = Path(file).with_suffix(".encrypted")
-        filepath = Path(self.encrypted_files_dir) / file
-
-        return (str(filepath), filepath.exists())
-
-    def encryp_content(self, content: str):
-        encrypted_content = self.__fernet_key.encrypt(content.encode()).decode()
-
-        return encrypted_content
-
-    def decrypt_content(self, encrypted_content: str):
-        decrypted_content = self.__fernet_key.decrypt(
-            encrypted_content.encode()
-        ).decode()
-
-        return decrypted_content
-
-    def create_encrypted_file(self, content: str, **kwargs):
-        file, _ = self.get_encrypted_file(**kwargs)
-
-        encrypted_content = self.__fernet_key.encrypt(content.encode("utf-8"))
-
-        with open(file, "+wb") as file:
-            file.write(encrypted_content)
-
-    def read_encrypted_file(self, **kwargs):
-        file, exist = self.get_encrypted_file(**kwargs)
-
-        if not exist:
-            raise ValueError("Encrypted file does not exist.")
-
-        with open(file, "r") as file:
-            encrypted_content = file.read()
-
-        decrypted_content = self.__fernet_key.decrypt(
-            encrypted_content.encode("utf-8")
-        ).decode("utf-8")
-
-        return decrypted_content

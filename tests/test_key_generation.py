@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from cryptoenv import KeyManager
+from cryptoenv.webapp import KeyManager
 
 
 class TestKeyManager(unittest.TestCase):

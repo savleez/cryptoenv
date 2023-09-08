@@ -6,7 +6,7 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 
-from cryptoenv import Encryptor, Configuration
+from cryptoenv.webapp import Encryptor, Configuration
 
 
 class TestConfiguration(unittest.TestCase):
