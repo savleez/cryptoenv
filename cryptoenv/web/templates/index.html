@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cryptoenv</title>
+    <!-- Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}" />
+  </head>
+
+  <body>
+    <h1>Cryptoenv</h1>
+    <div class="input-container">
+      <label for="file-content">
+        {% if filename %} {{ filename }} {% else %}No file selected{% endif %}
+      </label>
+      <input type="text" id="file-content" name="file-content" readonly>
+    </div>
+
+    <div class="buttons-container">
+      <button type="button" class="new-file-button" onclick="createNewFile()">New file</button>        
+      <button type="button" class="file-input-button" onclick="openFile()">Open file</button>
+    </div>
+    <input
+      type="file"
+      id="fileInput"
+      accept=".encrypted"
+      {# class="file-input" #}
+      style="display: none;"
+    />
+  </body>
+
+  <!-- Javascript -->
+  <script src="{{ url_for('static', path='script.js') }}"></script>
+
+</html>

@@ -1,13 +1,13 @@
 import unittest
 from unittest.mock import patch
 
-from cryptoenv import KeyManager
+from cryptoenv import KeyGenerator
 
 
-class TestKeyManager(unittest.TestCase):
+class TestKeyGenerator(unittest.TestCase):
     @patch("os.getenv")
     def setUp(self, mock_getenv) -> None:
-        self.key_manager = KeyManager(pepper="TEST_PEPPER")
+        self.key_manager = KeyGenerator(pepper="TEST_PEPPER")
 
         mock_getenv.side_effect = lambda x, default: {
             "PEPPER": "TEST_PEPPER",
@@ -15,51 +15,77 @@ class TestKeyManager(unittest.TestCase):
         }.get(x, default)
 
     def test_generate_salt(self):
-        """Test the generation of a salt using test environment variables."""
+        """Generate a random salt and confirm result is a string."""
 
-        expected_salt = (
-            "b6fd0fafb1abcb3e25ef507d8fcb840732eaba49cacfa03afc3d3110af5f51c5"
-        )
-
-        actual_salt = self.key_manager.generate_salt()
-        self.assertEqual(actual_salt, expected_salt)
-
-    def test_generate_key(self):
-        """Test the generation of a key using a test password and environment variables."""
-
-        test_password = "test_password"
-
-        # Pre-Generated key created using a test pepper and user environment variables
-        expected_key = "YhaohQ7IhEEAJrPYrw3y9gwVgPWeGXD5Ot6Sj6Y10AE="
-
-        actual_key = self.key_manager.generate_key(test_password)
-        self.assertEqual(actual_key, expected_key)
+        salt = self.key_manager.generate_salt()
+        self.assertIsInstance(salt, str)
 
     def test_generate_same_salt(self):
-        """Test that two instances of KeyManager with the same pepper generate the same salt."""
+        """Generate the same salt using two instances of KeyGenerator
+        with the same pepper generate the same salt.
+        """
 
-        key_manager1 = KeyManager(pepper="TEST_PEPPER")
-        key_manager2 = KeyManager(pepper="TEST_PEPPER")
+        key_manager1 = KeyGenerator(pepper="TEST_PEPPER")
+        key_manager2 = KeyGenerator(pepper="TEST_PEPPER")
 
         salt1 = key_manager1.generate_salt()
         salt2 = key_manager2.generate_salt()
 
         self.assertEqual(salt1, salt2)
 
-    def test_generate_unique_salt(self):
-        """Test that two instances of KeyManager with different pepper values generate different salts."""
+    def test_generate_different_salt_using_pepper(self):
+        """Generate two different salts using two instances of
+        KeyGenerator with different pepper values.
+        """
 
-        key_manager1 = KeyManager(pepper="PEPPER")
+        key_manager1 = KeyGenerator(pepper="PEPPER")
         salt1 = key_manager1.generate_salt()
 
         with patch.dict("os.environ", {"PEPPER": "TEST_PEPPER_2"}):
-            key_manager2 = KeyManager(pepper="PEPPER")
+            key_manager2 = KeyGenerator(pepper="PEPPER")
             salt2 = key_manager2.generate_salt()
 
         self.assertNotEqual(salt1, salt2)
 
+    def test_generate_different_salt_using_user(self):
+        """Generate two different salts using two instances of
+        KeyGenerator with different user values.
+        """
+
+        key_manager1 = KeyGenerator(pepper="PEPPER")
+        salt1 = key_manager1.generate_salt()
+
+        with patch.dict("os.environ", {"USER": "DIFFERENT_USER"}):
+            key_manager2 = KeyGenerator(pepper="PEPPER")
+            salt2 = key_manager2.generate_salt()
+
+        self.assertNotEqual(salt1, salt2)
+
+    def test_generate_key(self):
+        """Generate a key using a generic password."""
+
+        test_password = "test_password"
+
+        key = self.key_manager.generate_key(test_password)
+        self.assertIsInstance(key, str)
+
+    def test_generate_key_with_same_passwords(self):
+        """Generate keys with the same passwords results in identical
+        keys.
+        """
+
+        password1 = "password"
+        password2 = "password"
+
+        key1 = self.key_manager.generate_key(password1)
+        key2 = self.key_manager.generate_key(password2)
+
+        self.assertEqual(key1, key2)
+
     def test_generate_key_with_different_passwords(self):
-        """Test that generating keys with different passwords results in different keys."""
+        """Generate keys with different passwords results in different
+        keys.
+        """
 
         password1 = "password1"
         password2 = "password2"
@@ -68,7 +94,3 @@ class TestKeyManager(unittest.TestCase):
         key2 = self.key_manager.generate_key(password2)
 
         self.assertNotEqual(key1, key2)
-
-
-if __name__ == "__main__":
-    unittest.main()

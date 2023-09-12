@@ -4,9 +4,45 @@
 #
 #    pip-compile req.in
 #
+annotated-types==0.5.0
+    # via pydantic
+anyio==4.0.0
+    # via starlette
 cffi==1.15.1
     # via cryptography
+click==8.1.7
+    # via uvicorn
 cryptography==41.0.3
     # via -r req.in
+exceptiongroup==1.1.3
+    # via anyio
+fastapi==0.103.0
+    # via -r req.in
+h11==0.14.0
+    # via uvicorn
+idna==3.4
+    # via anyio
+jinja2==3.1.2
+    # via -r req.in
+markupsafe==2.1.3
+    # via jinja2
 pycparser==2.21
     # via cffi
+pydantic==2.3.0
+    # via fastapi
+pydantic-core==2.6.3
+    # via pydantic
+python-multipart==0.0.6
+    # via -r req.in
+sniffio==1.3.0
+    # via anyio
+starlette==0.27.0
+    # via fastapi
+typing-extensions==4.7.1
+    # via
+    #   fastapi
+    #   pydantic
+    #   pydantic-core
+    #   uvicorn
+uvicorn==0.23.2
+    # via -r req.in
