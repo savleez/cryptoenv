@@ -1,9 +1,11 @@
-from .web import runserver
+from cryptoenv.crypto.configuration import ConfigHandler
+from cryptoenv.crypto.keys import KeyGenerator
+from cryptoenv.crypto.decryptor import Crypto
+from cryptoenv.core.configuration import Configs
 
-from .core import Configuration
-from .crypto import DecryptedConfig, KeyGenerator, Crypto
-
-
-def run_web_app():
-    print("Hello world")
-    runserver()
+all = [
+    ConfigHandler,
+    KeyGenerator,
+    Crypto,
+    Configs,
+]

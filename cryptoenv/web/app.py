@@ -13,6 +13,10 @@ def runserver():
 
     uvicorn.run(app, host="localhost", port=8000)
 
+def run_web_app():
+    print("Hello world")
+    runserver()
+
 
 # from pathlib import Path
 # from typing import Union
