@@ -3,6 +3,11 @@ from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
 
 from cryptoenv.core.configuration import Configs
+from cryptoenv.crypto.exceptions import (
+    EncryptedFileDoesNotExist,
+    ErrorDecryptingFile,
+    EncryptedFileAlreadyExist,
+)
 from cryptoenv.crypto.keys import KeyGenerator
 
 
@@ -62,7 +67,7 @@ class Crypto:
 
             return decrypted_msg
 
-        except InvalidToken as itex:
+        except InvalidToken as it_ex:
             raise InvalidToken("Invalid password") from None
 
     def create_encrypted_file(self, content: str, **kwargs) -> Path:
@@ -78,7 +83,10 @@ class Crypto:
             file (Path): Absolute path of the created encrypted file.
         """
 
-        file, _ = self.get_encrypted_file(**kwargs)
+        file, exists = self.get_encrypted_file(**kwargs)
+
+        if exists:
+            raise EncryptedFileAlreadyExist("Encrypted file already exists.")
 
         encrypted_content = self.encrypt(content)
 
@@ -100,11 +108,33 @@ class Crypto:
         file, exist = self.get_encrypted_file(**kwargs)
 
         if not exist:
-            raise ValueError("Encrypted file does not exist.")
+            raise EncryptedFileDoesNotExist("Encrypted file does not exist.")
 
-        with open(file, "r") as file:
-            encrypted_content = file.read()
+        with open(file, "r") as f:
+            encrypted_content = f.read()
 
-        decrypted_content = self.decrypt(encrypted_content)
+        try:
+            decrypted_content = self.decrypt(encrypted_content)
+        except InvalidToken:
+            raise ErrorDecryptingFile("Password seem to be wrong. Please check.")
 
         return decrypted_content
+
+    def write_encrypted_file(self, content: str, **kwargs) -> bool:
+        """Method that encrypt a config file content and saves it on a file.
+
+        Kwargs:
+            filename (str): Name of the file. Defaults to config default encryped file name
+
+        Returns:
+            saved (str): True if the content was saved on the encrypted file.
+        """
+
+        file, _ = self.get_encrypted_file(**kwargs)
+
+        encrypted_content = self.encrypt(content)
+
+        with open(file, "+w") as f:
+            f.write(encrypted_content)
+
+        return True
