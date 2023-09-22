@@ -1,133 +1,82 @@
-async function createNewFile() {
-  let fileName = prompt("New file name: ");
-
-  if (!fileName) {
-    return;
-  }
-
-  fileName = fileName ? fileName.trim() : fileName;
-
-  if (fileName === "") {
-    alert("Please enter a file name.");
-    return;
-  }
-
-  let password = prompt("File password: ");
-
-  if (!password) {
-    return;
-  }
-
-  if (password === "") {
-    alert("Please enter a password.");
-    return;
-  }
-
-  let encryptedFileObj = {
-    filename: fileName,
-    password: password,
-  };
+async function newFile() {
+  let password = prompt("Enter the file password: ");
 
   try {
-    let response = await fetch("/new_file", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(encryptedFileObj),
-    });
-
-    let data = await response.json();
-
-    if (response.ok) {
-      let { filename, encrypted_content } = data;
-      let blob = new Blob([encrypted_content], { type: "text/plain" });
-      let url = window.URL.createObjectURL(blob);
-      let a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      encryptedFileObj.encrypted_content = encrypted_content;
-    } else {
-      let errorDetail = data.detail;
-      throw Error(errorDetail);
-    }
+    validatePassword(password);
   } catch (error) {
-    alert(`An error has occurred. ${error}`);
+    console.error("Se ha producido un error:", error.message);
     return;
   }
 
-  try {
-    decryptAndDisplayContent(encryptedFileObj);
-  } catch (error) {
-    console.error(error);
-    alert(`An error occurred. ${error}`);
+  let response = await fetch("/new_file", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      password: password,
+    }),
+  });
+
+  displayContent(response);
+}
+
+function validatePassword(password) {
+  if (!password || password === "") {
+    throw new Error("Password must not be empty.");
   }
 }
 
 async function openFile() {
-  fileInput.click();
+  let password = prompt("Enter the file password: ");
 
-  fileInput.addEventListener("change", async (event) => {
-    let selectedFile = event.target.files[0];
+  try {
+    validatePassword(password);
+  } catch (error) {
+    console.error("Se ha producido un error:", error.message);
+    return;
+  }
 
-    if (!selectedFile) {
-      return;
-    }
-
-    try {
-      let fileContent = await readFileContent(selectedFile);
-
-      let password = prompt("File password: ");
-
-      if (!password) {
-        return;
-      }
-
-      if (password === "") {
-        alert("Please enter a password.");
-        return;
-      }
-
-      let encryptedFileObj = {
-        filename: selectedFile.name,
-        password: password,
-        encrypted_content: fileContent,
-      };
-
-      decryptAndDisplayContent(encryptedFileObj);
-    } catch (error) {
-      alert("Error reading file: " + error);
-    }
+  let response = await fetch("/open", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      password: password,
+    }),
   });
+
+  displayContent(response);
 }
 
-async function decryptAndDisplayContent(encryptedFileObj) {
+async function displayContent(response) {
+  let content;
+
   try {
-    let response = await fetch("/decrypt", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(encryptedFileObj),
-    });
+    if (!response) {
+      throw new Error(`Error: ${response}`);
+    }
+
+    let data = await response.json();
 
     if (response.ok) {
-      let data = await response.json();
-      let content = data.decrypted_content;
-
-      document.getElementById("file-content").value = content;
+      content = data.decrypted_content;
     } else {
-      alert("Error decrypting file.");
+      if (data.slug == "file-does-not-exist") {
+        content = "Encrypted file does not exist. Try creating a new one.";
+      } else if (data.slug == "error-decrypting-file") {
+        content = "Error decrypting file. Try again.";
+      } else if (data.slug == "file-already-exists") {
+        content = "Encrypted file already exists. Try opening it.";
+      }
     }
   } catch (error) {
-    console.error(error);
-    alert("An error occurred.");
+    console.error("Unknown error", error.message);
+    return;
   }
+
+  document.getElementById("file-content").value = JSON.stringify(content);
 }
 
 async function readFileContent(file) {
